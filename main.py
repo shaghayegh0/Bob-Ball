@@ -7,7 +7,7 @@ import random
 pygame.init()
 
 # Set up display
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1000, 1000
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Bobbing Ball')
 
@@ -21,8 +21,7 @@ color_list = [RED, BLUE, GREEN]
 
 # Circle properties
 circle_center = (WIDTH // 2, HEIGHT // 2)
-circle_radius = 200
-circle_color = BLACK
+circle_radius = 300
 
 # Ball properties
 ball_radius = 20
@@ -47,6 +46,18 @@ class Ball:
     def draw(self, window):
         pygame.draw.circle(window, self.color, (int(self.pos[0]), int(self.pos[1])), ball_radius)
 
+class Circle:
+    def __init__(self, center, radius, color):
+        self.center = center
+        self.radius = radius
+        self.color = color
+    
+    def change_color(self, adjustment):
+        self.color = add_tuples(self.color, adjustment)
+    
+    def draw(self, window):
+        pygame.draw.circle(window, self.color, self.center, self.radius, 2)
+
 def is_inside_circle(pos, center, radius):
     return math.sqrt((pos[0] - center[0])**2 + (pos[1] - center[1])**2) < radius
 
@@ -64,47 +75,44 @@ def reflect_vector(velocity, normal):
 def add_tuples(t1, t2):
     return tuple(min(max(a + b, 0), 255) for a, b in zip(t1, t2))
 
-def subtract_tuples(t1, t2):
-    return tuple(min(max(a - b, 0), 255) for a, b in zip(t1, t2))
-
-def hit(ball, circle_center, circle_radius):
-    if not is_inside_circle(ball.pos, circle_center, circle_radius - ball_radius):
+def hit(ball, circle):
+    if not is_inside_circle(ball.pos, circle.center, circle.radius - ball_radius):
         # Calculate normal vector
-        normal = [ball.pos[0] - circle_center[0], ball.pos[1] - circle_center[1]]
+        normal = [ball.pos[0] - circle.center[0], ball.pos[1] - circle.center[1]]
         
         # Reflect the ball speed
         ball.reflect(normal)
         
         # Move the ball back inside the boundary
-        ball.pos[0] += ball.speed[0]
-        ball.pos[1] += ball.speed[1]
+        ball.pos[0] -= ball.speed[0]
+        ball.pos[1] -= ball.speed[1]
         
         # Change colors
         adjustment = (random.choice(adjustment_list), random.choice(adjustment_list), random.choice(adjustment_list))
         ball.change_color(adjustment)
-        
-        # Generate a new ball inside the circle with random speed
-        angle = random.uniform(0, 2 * math.pi)
-        distance = random.uniform(0, circle_radius - ball_radius)
-        new_x = circle_center[0] + distance * math.cos(angle)
-        new_y = circle_center[1] + distance * math.sin(angle)
-        new_speed = [random.uniform(-3, 3), random.uniform(-3, 3)]
-        
-        new_ball = Ball(
-            pos=[new_x, new_y],
-            speed=new_speed,
-            color=random.choice(color_list)
-        )
-        return new_ball, type(new_ball)
-    
-    return None, None
+        circle.change_color(adjustment)
 
-# Initialize the ball list
-ball_list = [Ball(
+        
+        # Add a smaller circle inside
+        new_circle_radius = circle.radius + 5
+        if new_circle_radius > 0:  # Ensure the new circle has a positive radius
+            new_circle = Circle(
+                center=[500,500],
+                radius=new_circle_radius,
+                color=random.choice(color_list)
+            )
+            return new_circle
+    return None
+
+ball = Ball(
     pos=[circle_center[0], circle_center[1]],  # Start at the circle center
     speed=[2, 2],  # Move towards the bottom-right initially
     color=(100, 50, 75)
-)]
+)
+
+# Initialize circle list
+circle = Circle(circle_center, circle_radius, RED)
+circle_list = [circle]
 
 # Clock
 clock = pygame.time.Clock()
@@ -116,20 +124,21 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Check collision and update ball list
-    for ball in ball_list:
-        new_ball, _ = hit(ball, circle_center, circle_radius)
-        if new_ball:
-            ball_list.append(new_ball)
-    
-    # Move and draw balls
-    window.fill(WHITE)
-    pygame.draw.circle(window, BLACK, circle_center, circle_radius, 2)
-    
-    for ball in ball_list:
-        ball.move()
-        ball.draw(window)
+    # Move ball
+    ball.move()
 
+    # Check for collisions and add new circles if needed
+    for circle in circle_list:
+        new_circle = hit(ball, circle)
+        if new_circle:
+            circle_list.append(new_circle)
+    
+    # Draw everything
+    window.fill(WHITE)
+    for circle in circle_list:
+        circle.draw(window)
+    ball.draw(window)
+    
     # Update the display
     pygame.display.flip()
 
