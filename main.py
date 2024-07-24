@@ -26,7 +26,7 @@ circle_color = BLACK
 
 # Ball properties
 ball_radius = 20
-adjustment_list = list(range(-20, 21))  
+adjustment_list = list(range(-20, 21))
 
 class Ball:
     def __init__(self, pos, speed, color):
@@ -68,9 +68,7 @@ def subtract_tuples(t1, t2):
     return tuple(min(max(a - b, 0), 255) for a, b in zip(t1, t2))
 
 def hit(ball, circle_center, circle_radius):
-
     if not is_inside_circle(ball.pos, circle_center, circle_radius - ball_radius):
-
         # Calculate normal vector
         normal = [ball.pos[0] - circle_center[0], ball.pos[1] - circle_center[1]]
         
@@ -85,21 +83,26 @@ def hit(ball, circle_center, circle_radius):
         adjustment = (random.choice(adjustment_list), random.choice(adjustment_list), random.choice(adjustment_list))
         ball.change_color(adjustment)
         
-        # Return new circle color and create a new ball
+        # Generate a new ball inside the circle with random speed
+        angle = random.uniform(0, 2 * math.pi)
+        distance = random.uniform(0, circle_radius - ball_radius)
+        new_x = circle_center[0] + distance * math.cos(angle)
+        new_y = circle_center[1] + distance * math.sin(angle)
+        new_speed = [random.uniform(-3, 3), random.uniform(-3, 3)]
+        
         new_ball = Ball(
-            pos=[circle_center[0], circle_center[1] - circle_radius + ball_radius],
-            speed=[-2, 2],
+            pos=[new_x, new_y],
+            speed=new_speed,
             color=random.choice(color_list)
         )
-        print ("ball in hit func" + str(type(new_ball)))
-        return new_ball , type(new_ball)
+        return new_ball, type(new_ball)
     
     return None, None
 
 # Initialize the ball list
 ball_list = [Ball(
-    pos=[circle_center[0] + 10, circle_center[1] - circle_radius + ball_radius],
-    speed=[1, 5],
+    pos=[circle_center[0], circle_center[1]],  # Start at the circle center
+    speed=[2, 2],  # Move towards the bottom-right initially
     color=(100, 50, 75)
 )]
 
@@ -114,48 +117,19 @@ while running:
             running = False
 
     # Check collision and update ball list
-    # new_balls = []
-    # for ball in ball_list:
-        # new_ball = hit(ball, circle_center, circle_radius)
-    #     if new_ball:
-    #         # new_balls.append((new_ball))
-    #         ball_list.append(new_ball)
-    #         print(ball_list)
+    for ball in ball_list:
+        new_ball, _ = hit(ball, circle_center, circle_radius)
+        if new_ball:
+            ball_list.append(new_ball)
     
-    # Add new balls to the list
-    # ball_list.extend(new_balls)
-
     # Move and draw balls
     window.fill(WHITE)
     pygame.draw.circle(window, BLACK, circle_center, circle_radius, 2)
     
-    print("ball list" )
-    print(ball_list)
-    # for i in range(0,1) :
-    #     ball = ball_list[i]
-
-    print('outside of ball list')
     for ball in ball_list:
-        # print('inside of')
-        # print(ball)
         ball.move()
         ball.draw(window)
-       
-       
-        new_ball  , t = hit(ball, circle_center, circle_radius)
-        print (t)
-        # print ("ball in main loop" + str(type(new_ball)))
-        # new_ball.move()
-        # if new_ball:
 
-        #     new_ball.move()
-            # print("end of main func" + str(type(new_ball)))
-            # ball_list.append(new_ball)
-            
-            # print('ball list : ')
-            # print(ball_list)
-        
-    
     # Update the display
     pygame.display.flip()
 
