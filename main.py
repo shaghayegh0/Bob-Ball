@@ -21,11 +21,12 @@ color_list = [RED, BLUE, GREEN]
 
 # Circle properties
 circle_center = (WIDTH // 2, HEIGHT // 2)
-circle_radius = 300
+circle_radius = 200
+circle_color = BLACK
 
 # Ball properties
 ball_radius = 20
-adjustment_list = list(range(-20, 21))
+adjustment_list = list(range(-20, 21))  
 
 class Ball:
     def __init__(self, pos, speed, color):
@@ -45,18 +46,6 @@ class Ball:
 
     def draw(self, window):
         pygame.draw.circle(window, self.color, (int(self.pos[0]), int(self.pos[1])), ball_radius)
-
-class Circle:
-    def __init__(self, center, radius, color):
-        self.center = center
-        self.radius = radius
-        self.color = color
-    
-    def change_color(self, adjustment):
-        self.color = add_tuples(self.color, adjustment)
-    
-    def draw(self, window):
-        pygame.draw.circle(window, self.color, self.center, self.radius, 2)
 
 def is_inside_circle(pos, center, radius):
     return math.sqrt((pos[0] - center[0])**2 + (pos[1] - center[1])**2) < radius
@@ -117,6 +106,45 @@ circle_list = [circle]
 # Clock
 clock = pygame.time.Clock()
 
+def hit(ball, circle_center, circle_radius):
+
+    if not is_inside_circle(ball.pos, circle_center, circle_radius - ball_radius):
+
+        # Calculate normal vector
+        normal = [ball.pos[0] - circle_center[0], ball.pos[1] - circle_center[1]]
+        
+        # Reflect the ball speed
+        ball.reflect(normal)
+        
+        # Move the ball back inside the boundary
+        ball.pos[0] += ball.speed[0]
+        ball.pos[1] += ball.speed[1]
+        
+        # Change colors
+        adjustment = (random.choice(adjustment_list), random.choice(adjustment_list), random.choice(adjustment_list))
+        ball.change_color(adjustment)
+        
+        # Return new circle color and create a new ball
+        new_ball = Ball(
+            pos=[circle_center[0], circle_center[1] - circle_radius + ball_radius],
+            speed=[-2, 2],
+            color=random.choice(color_list)
+        )
+        print ("ball in hit func" + str(type(new_ball)))
+        return new_ball , type(new_ball)
+    
+    return None, None
+
+# Initialize the ball list
+ball_list = [Ball(
+    pos=[circle_center[0] + 10, circle_center[1] - circle_radius + ball_radius],
+    speed=[1, 5],
+    color=(100, 50, 75)
+)]
+
+# Clock
+clock = pygame.time.Clock()
+
 # Main game loop
 running = True
 while running:
@@ -124,20 +152,49 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Move ball
-    ball.move()
 
-    # Check for collisions and add new circles if needed
-    for circle in circle_list:
-        new_circle = hit(ball, circle)
-        if new_circle:
-            circle_list.append(new_circle)
+    # Check collision and update ball list
+    # new_balls = []
+    # for ball in ball_list:
+        # new_ball = hit(ball, circle_center, circle_radius)
+    #     if new_ball:
+    #         # new_balls.append((new_ball))
+    #         ball_list.append(new_ball)
+    #         print(ball_list)
     
-    # Draw everything
+    # Add new balls to the list
+    # ball_list.extend(new_balls)
+
+    # Move and draw balls
     window.fill(WHITE)
-    for circle in circle_list:
-        circle.draw(window)
-    ball.draw(window)
+    pygame.draw.circle(window, BLACK, circle_center, circle_radius, 2)
+    
+    print("ball list" )
+    print(ball_list)
+    # for i in range(0,1) :
+    #     ball = ball_list[i]
+
+    print('outside of ball list')
+    for ball in ball_list:
+        # print('inside of')
+        # print(ball)
+        ball.move()
+        ball.draw(window)
+       
+       
+        new_ball  , t = hit(ball, circle_center, circle_radius)
+        print (t)
+        # print ("ball in main loop" + str(type(new_ball)))
+        # new_ball.move()
+        # if new_ball:
+
+        #     new_ball.move()
+            # print("end of main func" + str(type(new_ball)))
+            # ball_list.append(new_ball)
+            
+            # print('ball list : ')
+            # print(ball_list)
+        
     
     # Update the display
     pygame.display.flip()
